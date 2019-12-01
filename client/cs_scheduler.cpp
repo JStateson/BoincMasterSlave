@@ -544,7 +544,7 @@ bool CLIENT_STATE::scheduler_rpc_poll() {
 	double InProgress = 0.0; // when this  goes to 0.0 we are done with all units [used only in bunkering]
 	static int iMpy = 5;
 	static PROJECT *BunkeredProject;
-
+	static bool bListOnce = true; // want to get exact spelling of project name for lookup purpose
     // are we currently doing a scheduler RPC?
     // If so, see if it's finished
     //
@@ -553,6 +553,13 @@ bool CLIENT_STATE::scheduler_rpc_poll() {
         scheduler_op->poll();
         return (scheduler_op->state == SCHEDULER_OP_STATE_IDLE);
     }
+
+	if (bListOnce)
+	{
+		bListOnce = false;
+		ListProjects();
+		msg_printf(0, MSG_INFO, "%s bunkering", bBunkerEnabled ? gstate.ProjectStarted : "NOT");
+	}
 
     if (bBunkerEnabled)
     {
@@ -590,7 +597,7 @@ bool CLIENT_STATE::scheduler_rpc_poll() {
 					msg_printf(BunkeredProject, MSG_INFO, "work fetch suspended by user and signaled wait for empty");
 					BunkeredProject->dont_request_more_work = true;
 				}
-                b1 = FALSE;
+                b1 = false;
             }
             return false;
         }
@@ -1546,3 +1553,17 @@ PROJECT* CLIENT_STATE::FindProject(char *sname)
 	}
 	return NULL;
 }
+
+PROJECT* CLIENT_STATE::ListProjects()
+{
+	for (int i = 0; i < projects.size(); i++) {
+		PROJECT* p = projects[i];
+		msg_printf(0, MSG_INFO, "Project Name:%s",p->project_name);
+	}
+	return NULL;
+}
+/*
+Einstein@Home
+Milkyway@Home
+SETI@home
+*/

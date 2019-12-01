@@ -266,6 +266,7 @@ struct CLIENT_STATE {
     CLIENT_STATE();
 	int count_results(); //jys
 	PROJECT* FindProject(char *sname); //jys
+	PROJECT* ListProjects();
     void show_host_info();
     bool is_new_client();
     int init();
