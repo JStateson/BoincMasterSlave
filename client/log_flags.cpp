@@ -746,6 +746,7 @@ void process_gpu_exclusions() {
         for (j=0; j<gstate.results.size(); j++) {
             RESULT* rp = gstate.results[j];
             if (rp->avp != avp) continue;
+			if (rp->ready_to_report)continue; //jys if ready to report no need to mark coproc as missing
             rp->coproc_missing = true;
             msg_printf(avp->project, MSG_INFO,
                 "marking %s as coproc missing",

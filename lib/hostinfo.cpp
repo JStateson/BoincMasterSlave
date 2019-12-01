@@ -49,7 +49,7 @@ void HOST_INFO::clear_host_info() {
     safe_strcpy(serialnum, "");
     safe_strcpy(ip_addr, "");
     safe_strcpy(host_cpid, "");
-
+    safe_strcpy(set_hostname, "");   //jys
     p_ncpus = 0;
     safe_strcpy(p_vendor, "");
     safe_strcpy(p_model, "");

@@ -15,6 +15,9 @@
 #Visual Studio Code options directory
 .vscode/
 
+#jys done want update anything there
+/win_build/
+
 # Installshield build directories
 /win_build/installerv2/BOINC
 /win_build/installerv2/BOINC_vbox
@@ -80,20 +83,22 @@ m4/lt~obsolete.m4
 missing
 test-driver
 
+
+#jys not always true had to comment out some
 ## files created by configure:
 Makefile
 .deps/
 boinc_path_config.py
-pkginfo
-prototype
-client/scripts/boinc-client
-client/scripts/boinc-client.service
+#pkginfo
+#prototype
+#client/scripts/boinc-client
+#client/scripts/boinc-client.service
 config.h
 config.log
 config.status
 libtool
-py/Boinc/version.py
-py/setup.py
+#py/Boinc/version.py
+#py/setup.py
 stamp-h1
 test/version.inc
 

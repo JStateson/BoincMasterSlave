@@ -56,6 +56,12 @@
 
 #include "hostinfo.h"
 
+void HOST_INFO::set_domainname(char* name) //jys
+{
+	safe_strcpy(set_hostname, name);
+}
+
+
 // get domain name and IP address of this host
 // Android: if domain_name is empty, set it to android_xxxxxxxx
 //

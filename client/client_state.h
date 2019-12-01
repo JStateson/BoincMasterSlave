@@ -112,7 +112,6 @@ struct CLIENT_STATE {
     // the following used only on Android
     DEVICE_STATUS device_status;
     double device_status_time;
-
     char language[16];                // ISO language code reported by GUI
     char client_brand[256];
         // contents of client_brand.txt, e.g. "HTC Power to Give"
@@ -154,6 +153,15 @@ struct CLIENT_STATE {
         // venue from project or AMS that gave us general prefs
     char attach_project_url[256];
     char attach_project_auth[256];
+	char set_hostname[256];    // jys
+	char set_password[256];    // jys
+	char ProjectStarted[256];  // jys name of the project that requires special handleing
+	bool bSetPassword = false; // set to true if user did a --set_password "" so as to make it null
+	int SetBackoff = -1;       // jys set backoff to a value else use default
+	int BackoffCode = 0;		// 0: do not test for out of work, 1: test for out of work only after getting some
+	int BunkerThreshold = -1; // jys
+	int spoof_gpus = -1; //jys
+	bool enable_mw_delay = false; //jys
     bool exit_before_upload;
         // exit when about to upload a file
     bool run_test_app;
@@ -256,6 +264,8 @@ struct CLIENT_STATE {
 
 // --------------- client_state.cpp:
     CLIENT_STATE();
+	int count_results(); //jys
+	PROJECT* FindProject(char *sname); //jys
     void show_host_info();
     bool is_new_client();
     int init();
@@ -574,7 +584,7 @@ extern THREAD throttle_thread;
     // computer memory usage and check for exclusive apps this often
 
 //////// WORK FETCH
-
+#define jys_MAX_JOBS 2000
 #define WORK_FETCH_PERIOD   60
     // see if we need to fetch work at least this often
 #define WF_MIN_BACKOFF_INTERVAL    600

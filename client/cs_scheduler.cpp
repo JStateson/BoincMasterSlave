@@ -4,7 +4,7 @@
 //
 // BOINC is free software; you can redistribute it and/or modify it
 // under the terms of the GNU Lesser General Public License
-// as published by the Free Software Foundation,
+// as published by the Free Software Foundation,`
 // either version 3 of the License, or (at your option) any later version.
 //
 // BOINC is distributed in the hope that it will be useful,
@@ -80,179 +80,280 @@ using std::string;
 // to be sent to a scheduling server
 //
 int CLIENT_STATE::make_scheduler_request(PROJECT* p) {
-    char buf[1024];
-    MIOFILE mf;
-    unsigned int i;
-    RESULT* rp;
+	char buf[1024];
+	MIOFILE mf;
+	unsigned int i;
+	RESULT* rp;
 
-    get_sched_request_filename(*p, buf, sizeof(buf));
-    FILE* f = boinc_fopen(buf, "wb");
-    if (!f) return ERR_FOPEN;
+	// jys mod for milkyway project
+	// do not attach any results unless 91 seconds have elapsed
+	// 
+	static double TimeLastResultsAttached = 0;
+	static bool bSetLastResultTime = false;
+	double SchReqTime = dtime();
+	static bool bIsMilkyway = false;
+	static bool bAttachOutput = true;
+	static int Patchmarker1 = 0x55aa55aa; // might want to patch in below constants
+	static int MW_wait_interval = 0x80;
+	static int MW_LOW_WATER_pct = 1;
+	static int MW_HIGH_WATER_pct = 0x10;
+	static bool mw_log = 0;
+	static int Patchmarker2 = 0x55aa55aa;
+	double NotStarted = 0.0;
+	double InProgress = 0.0;
+	static double mw_low, mw_high;
+	static double mw_last_results_sent = 0;
+	double mw_elapsed_results_sent = 0;
+	static bool bInitRatio = true;
+	static bool bEmptyWater = false;
+	int jPN;
 
-    double trs = total_resource_share();
-    double rrs = runnable_resource_share(RSC_TYPE_ANY);
-    double prrs = potentially_runnable_resource_share();
-    double resource_share_fraction, rrs_fraction, prrs_fraction;
-    if (trs) {
-        resource_share_fraction = p->resource_share / trs;
-    } else {
-        resource_share_fraction = 1;
-    }
-    if (rrs) {
-        rrs_fraction = p->resource_share / rrs;
-    } else {
-        rrs_fraction = 1;
-    }
-    if (prrs) {
-        prrs_fraction = p->resource_share / prrs;
-    } else {
-        prrs_fraction = 1;
-    }
+	if (gstate.enable_mw_delay)
+	{
+		// jys make sure it is milkyway project
+#ifdef WIN32
+		jPN = _stricmp(p->project_name, "milkyway@home");
+#else
+		jPN = strcasecmp(p->project_name, "milkyway@home");
+#endif
+		bIsMilkyway = (jPN == 0);
+		if (bIsMilkyway)SchReqTime = dtime();
+		if (bInitRatio)
+		{
+			mw_low = MW_LOW_WATER_pct / 100.0;
+			mw_high = MW_HIGH_WATER_pct / 100.0;
+			bInitRatio = false;
+			msg_printf(p, MSG_INFO, "Using %d for low water and %d for high water pcts with delay(secs)%d",
+				MW_LOW_WATER_pct, MW_HIGH_WATER_pct, MW_wait_interval);
+		}
+	}
 
-    // if hostid is zero, rpc_seqno better be also
-    //
-    if (!p->hostid) {
-        p->rpc_seqno = 0;
-    }
+	get_sched_request_filename(*p, buf, sizeof(buf));
+	FILE* f = boinc_fopen(buf, "wb");
+	if (!f) return ERR_FOPEN;
 
-    mf.init_file(f);
-    fprintf(f,
-        "<scheduler_request>\n"
-        "    <authenticator>%s</authenticator>\n"
-        "    <hostid>%d</hostid>\n"
-        "    <rpc_seqno>%d</rpc_seqno>\n"
-        "    <core_client_major_version>%d</core_client_major_version>\n"
-        "    <core_client_minor_version>%d</core_client_minor_version>\n"
-        "    <core_client_release>%d</core_client_release>\n"
-        "    <resource_share_fraction>%f</resource_share_fraction>\n"
-        "    <rrs_fraction>%f</rrs_fraction>\n"
-        "    <prrs_fraction>%f</prrs_fraction>\n"
-        "    <duration_correction_factor>%f</duration_correction_factor>\n"
-        "    <allow_multiple_clients>%d</allow_multiple_clients>\n"
-        "    <sandbox>%d</sandbox>\n"
-        "    <dont_send_work>%d</dont_send_work>\n",
-        p->authenticator,
-        p->hostid,
-        p->rpc_seqno,
-        core_client_version.major,
-        core_client_version.minor,
-        core_client_version.release,
-        resource_share_fraction,
-        rrs_fraction,
-        prrs_fraction,
-        p->duration_correction_factor,
-        cc_config.allow_multiple_clients?1:0,
-        g_use_sandbox?1:0,
-        p->dont_request_more_work?1:0
-    );
-    work_fetch.write_request(f, p);
+	double trs = total_resource_share();
+	double rrs = runnable_resource_share(RSC_TYPE_ANY);
+	double prrs = potentially_runnable_resource_share();
+	double resource_share_fraction, rrs_fraction, prrs_fraction;
+	if (trs) {
+		resource_share_fraction = p->resource_share / trs;
+	}
+	else {
+		resource_share_fraction = 1;
+	}
+	if (rrs) {
+		rrs_fraction = p->resource_share / rrs;
+	}
+	else {
+		rrs_fraction = 1;
+	}
+	if (prrs) {
+		prrs_fraction = p->resource_share / prrs;
+	}
+	else {
+		prrs_fraction = 1;
+	}
 
-    // write client capabilities
-    //
-    fprintf(f,
-        "    <client_cap_plan_class>1</client_cap_plan_class>\n"
-    );
+	// if hostid is zero, rpc_seqno better be also
+	//
+	if (!p->hostid) {
+		p->rpc_seqno = 0;
+	}
 
-    write_platforms(p, mf.f);
+	mf.init_file(f);
+	fprintf(f,
+		"<scheduler_request>\n"
+		"    <authenticator>%s</authenticator>\n"
+		"    <hostid>%d</hostid>\n"
+		"    <rpc_seqno>%d</rpc_seqno>\n"
+		"    <core_client_major_version>%d</core_client_major_version>\n"
+		"    <core_client_minor_version>%d</core_client_minor_version>\n"
+		"    <core_client_release>%d</core_client_release>\n"
+		"    <resource_share_fraction>%f</resource_share_fraction>\n"
+		"    <rrs_fraction>%f</rrs_fraction>\n"
+		"    <prrs_fraction>%f</prrs_fraction>\n"
+		"    <duration_correction_factor>%f</duration_correction_factor>\n"
+		"    <allow_multiple_clients>%d</allow_multiple_clients>\n"
+		"    <sandbox>%d</sandbox>\n"
+		"    <dont_send_work>%d</dont_send_work>\n",
+		p->authenticator,
+		p->hostid,
+		p->rpc_seqno,
+		core_client_version.major,
+		core_client_version.minor,
+		core_client_version.release,
+		resource_share_fraction,
+		rrs_fraction,
+		prrs_fraction,
+		p->duration_correction_factor,
+		cc_config.allow_multiple_clients ? 1 : 0,
+		g_use_sandbox ? 1 : 0,
+		p->dont_request_more_work ? 1 : 0
+		);
+	work_fetch.write_request(f, p);
 
-    if (strlen(p->code_sign_key)) {
-        fprintf(f, "    <code_sign_key>\n%s\n</code_sign_key>\n", p->code_sign_key);
-    }
+	// write client capabilities
+	//
+	fprintf(f,
+		"    <client_cap_plan_class>1</client_cap_plan_class>\n"
+		);
 
-    // send working prefs
-    //
-    fprintf(f, "<working_global_preferences>\n");
-    global_prefs.write(mf);
-    fprintf(f, "</working_global_preferences>\n");
+	write_platforms(p, mf.f);
 
-    // send master global preferences if present and not host-specific
-    //
-    if (!global_prefs.host_specific && boinc_file_exists(GLOBAL_PREFS_FILE_NAME)) {
-        FILE* fprefs = fopen(GLOBAL_PREFS_FILE_NAME, "r");
-        if (fprefs) {
-            copy_stream(fprefs, f);
-            fclose(fprefs);
-        }
-        PROJECT* pp = lookup_project(global_prefs.source_project);
-        if (pp && strlen(pp->email_hash)) {
-            fprintf(f,
-                "<global_prefs_source_email_hash>%s</global_prefs_source_email_hash>\n",
-                pp->email_hash
-            );
-        }
-    }
+	if (strlen(p->code_sign_key)) {
+		fprintf(f, "    <code_sign_key>\n%s\n</code_sign_key>\n", p->code_sign_key);
+	}
 
-    // Of the projects with same email hash as this one,
-    // send the oldest cross-project ID.
-    // Use project URL as tie-breaker.
-    //
-    PROJECT* winner = p;
-    for (i=0; i<projects.size(); i++ ) {
-        PROJECT* project = projects[i];
-        if (project == p) continue;
-        if (strcmp(project->email_hash, p->email_hash)) continue;
-        if (project->cpid_time < winner->cpid_time) {
-            winner = project;
-        } else if (project->cpid_time == winner->cpid_time) {
-            if (strcmp(project->master_url, winner->master_url) < 0) {
-                winner = project;
-            }
-        }
-    }
-    fprintf(f,
-        "<cross_project_id>%s</cross_project_id>\n",
-        winner->cross_project_id
-    );
+	// send working prefs
+	//
+	fprintf(f, "<working_global_preferences>\n");
+	global_prefs.write(mf);
+	fprintf(f, "</working_global_preferences>\n");
 
-    time_stats.write(mf, true);
-    net_stats.write(mf);
-    if (global_prefs.daily_xfer_period_days) {
-        daily_xfer_history.write_scheduler_request(
-            mf, global_prefs.daily_xfer_period_days
-        );
-    }
+	// send master global preferences if present and not host-specific
+	//
+	if (!global_prefs.host_specific && boinc_file_exists(GLOBAL_PREFS_FILE_NAME)) {
+		FILE* fprefs = fopen(GLOBAL_PREFS_FILE_NAME, "r");
+		if (fprefs) {
+			copy_stream(fprefs, f);
+			fclose(fprefs);
+		}
+		PROJECT* pp = lookup_project(global_prefs.source_project);
+		if (pp && strlen(pp->email_hash)) {
+			fprintf(f,
+				"<global_prefs_source_email_hash>%s</global_prefs_source_email_hash>\n",
+				pp->email_hash
+				);
+		}
+	}
 
-    // update hardware info, and write host info
-    //
-    host_info.get_host_info(false);
-    set_ncpus();
-    host_info.write(mf, !cc_config.suppress_net_info, false);
+	// Of the projects with same email hash as this one,
+	// send the oldest cross-project ID.
+	// Use project URL as tie-breaker.
+	//
+	PROJECT* winner = p;
+	for (i = 0; i < projects.size(); i++) {
+		PROJECT* project = projects[i];
+		if (project == p) continue;
+		if (strcmp(project->email_hash, p->email_hash)) continue;
+		if (project->cpid_time < winner->cpid_time) {
+			winner = project;
+		}
+		else if (project->cpid_time == winner->cpid_time) {
+			if (strcmp(project->master_url, winner->master_url) < 0) {
+				winner = project;
+			}
+		}
+	}
+	fprintf(f,
+		"<cross_project_id>%s</cross_project_id>\n",
+		winner->cross_project_id
+		);
 
-    // get and write disk usage
-    //
-    get_disk_usages();
-    get_disk_shares();
-    fprintf(f,
-        "    <disk_usage>\n"
-        "        <d_boinc_used_total>%f</d_boinc_used_total>\n"
-        "        <d_boinc_used_project>%f</d_boinc_used_project>\n"
-        "        <d_project_share>%f</d_project_share>\n"
-        "    </disk_usage>\n",
-        total_disk_usage, p->disk_usage, p->disk_share
-    );
+	time_stats.write(mf, true);
+	net_stats.write(mf);
+	if (global_prefs.daily_xfer_period_days) {
+		daily_xfer_history.write_scheduler_request(
+			mf, global_prefs.daily_xfer_period_days
+			);
+	}
 
-    if (coprocs.n_rsc > 1) {
-        work_fetch.copy_requests();
-        coprocs.write_xml(mf, true);
+	// update hardware info, and write host info
+	//
+	host_info.get_host_info(false);
+	set_ncpus();
+	host_info.write(mf, !cc_config.suppress_net_info, false);
+
+	// get and write disk usage
+	//
+	get_disk_usages();
+	get_disk_shares();
+	fprintf(f,
+		"    <disk_usage>\n"
+		"        <d_boinc_used_total>%f</d_boinc_used_total>\n"
+		"        <d_boinc_used_project>%f</d_boinc_used_project>\n"
+		"        <d_project_share>%f</d_project_share>\n"
+		"    </disk_usage>\n",
+		total_disk_usage, p->disk_usage, p->disk_share
+		);
+
+	if (coprocs.n_rsc > 1) {
+		work_fetch.copy_requests();
+		if (gstate.spoof_gpus != -1) // jys
+		{
+			coprocs.ati.req_instances = gstate.spoof_gpus;
+			coprocs.nvidia.req_instances = gstate.spoof_gpus;
+		}
+		coprocs.write_xml(mf, true);
+	}
+
+
+	if (bIsMilkyway)
+	{
+		if (bSetLastResultTime)
+		{
+			mw_elapsed_results_sent = SchReqTime - mw_last_results_sent;
+		}
+		else mw_elapsed_results_sent = MW_wait_interval;
+		bAttachOutput = mw_elapsed_results_sent >= MW_wait_interval;
+		if (!bAttachOutput) // may want to override so as to not get any more tasks for a while
+		{
+			p->get_task_durs(NotStarted, InProgress);
+			// see if we hit the high water mark.  may never happen but need to be safe
+			if (InProgress > NotStarted * mw_high)
+				bEmptyWater = true;	// cant let it build up too much
+			if (InProgress < NotStarted * mw_low)
+				bEmptyWater = false;
+			bAttachOutput = bEmptyWater;
+			if (mw_log)
+				msg_printf(0, MSG_INFO, "[MILKYWAY] InProgress:%8.2f  NotStarted: %8.2f high:%6.1f  low:%6.1f",
+				InProgress, NotStarted, NotStarted*mw_high, NotStarted*mw_low);
+		}
+		// always attach on an update so as to upload results
+		if (p->sched_rpc_pending == RPC_REASON_USER_REQ)
+			bAttachOutput = true;
+	}
+	else bAttachOutput = true;
+	if (bIsMilkyway)
+	{
+	    TimeLastResultsAttached = SchReqTime;
+		if  (mw_log)
+			msg_printf(0, MSG_INFO, "[MW] TOD:%9.2f  Attach: %s  Elapsed: %6.2f  OverrideAttach:%s",
+			SchReqTime, bAttachOutput ? "true" : "false", mw_elapsed_results_sent, (p->sched_rpc_pending == RPC_REASON_USER_REQ) ? "true" : "false");
     }
 
     // report completed jobs
     //
     unsigned int last_reported_index = 0;
-    p->nresults_returned = 0;
-    for (i=0; i<results.size(); i++) {
-        rp = results[i];
-        if (rp->project == p && rp->ready_to_report) {
-            p->nresults_returned++;
-            rp->write(mf, true);
-        }
-        if (cc_config.max_tasks_reported
-            && (p->nresults_returned >= cc_config.max_tasks_reported)
-        ) {
-            last_reported_index = i;
-            break;
-        }
-    }
+	if (bAttachOutput) //jys
+	{
+		p->nresults_returned = 0;
+		for (i = 0; i<results.size(); i++) {
+			rp = results[i];
+			if (rp->project == p && rp->ready_to_report) {
+				p->nresults_returned++;
+				rp->write(mf, true);
+			}
+			if (cc_config.max_tasks_reported
+				&& (p->nresults_returned >= cc_config.max_tasks_reported)
+				) {
+				last_reported_index = i;
+				break;
+			}
+		}
+	}
+
+	if (bIsMilkyway && bAttachOutput) //jys
+	{
+		mw_last_results_sent = SchReqTime;
+		bSetLastResultTime = true;
+		if (mw_log)
+			msg_printf(0, MSG_INFO, "[MW] %s  Attach: %s Number Attached:%d  Elapsed: %6.2f  Emptying:%s",
+			p->project_name, bAttachOutput ? "true" : "false", p->nresults_returned, mw_elapsed_results_sent,
+			bEmptyWater ? "true" : "false");
+	}
+	
 
     read_trickle_files(p, f);
 
@@ -432,6 +533,17 @@ bool CLIENT_STATE::scheduler_rpc_poll() {
     static double last_time=0;
     static double last_work_fetch_time = 0;
     double elapsed_time;
+    // jys bunker stuff
+    bool bBunkerEnabled = gstate.BunkerThreshold > 0;
+    static bool bWaitForEmpty = false;
+    static bool b1 = true;
+    static bool b2 = true;
+    static bool bMustShowStatus = true;
+    static double last_show_status = 0;
+	double NotStarted = 0.0;
+	double InProgress = 0.0; // when this  goes to 0.0 we are done with all units [used only in bunkering]
+	static int iMpy = 5;
+	static PROJECT *BunkeredProject;
 
     // are we currently doing a scheduler RPC?
     // If so, see if it's finished
@@ -440,6 +552,48 @@ bool CLIENT_STATE::scheduler_rpc_poll() {
         last_time = now;
         scheduler_op->poll();
         return (scheduler_op->state == SCHEDULER_OP_STATE_IDLE);
+    }
+
+    if (bBunkerEnabled)
+    {
+        if (bWaitForEmpty)
+        {  // every 5 minutes show status
+            cc_config.exit_when_idle = true;
+            had_or_requested_work = true;
+            elapsed_time = now - last_show_status;
+            if (!clock_change && elapsed_time < iMpy * WORK_FETCH_PERIOD) return false;
+			BunkeredProject->get_task_durs(NotStarted, InProgress);
+            msg_printf(0, MSG_INFO, " set cc_config for empty results:%d  WUs:%d  IP:%8.2f NS:%8.2f", 
+				gstate.results.size(), gstate.workunits.size(),NotStarted, InProgress);
+			InProgress += NotStarted;
+			if (InProgress < 4000) iMpy = 1;  //jys these are allways 0 as never calculated it seems
+			if (InProgress == 0.0)
+			{
+				// signal exit timer thread
+				exit_after_app_start_secs = 1;
+			}
+            last_show_status = now;
+            return false;
+        }
+        if (gstate.results.size() > gstate.BunkerThreshold)
+        {
+            bWaitForEmpty = true;
+            if (b1)
+            {
+				BunkeredProject = FindProject(gstate.ProjectStarted);
+				if(!BunkeredProject)
+					msg_printf(0, MSG_INFO,
+						"[BUNKER ERROR] unable to find project:%s", gstate.ProjectStarted); //jys
+				else
+				{
+					gstate.set_client_state_dirty("Project modified by user");
+					msg_printf(BunkeredProject, MSG_INFO, "work fetch suspended by user and signaled wait for empty");
+					BunkeredProject->dont_request_more_work = true;
+				}
+                b1 = FALSE;
+            }
+            return false;
+        }
     }
 
     if (network_suspended) return false;
@@ -1372,3 +1526,23 @@ void CLIENT_STATE::request_work_fetch(const char* where) {
     must_check_work_fetch = true;
 }
 
+// jys look up project name (not url eg: milkyway@home )
+// hmm case sensitive!!  needed to be Milkyway@Home
+PROJECT* CLIENT_STATE::FindProject(char *sname)
+{
+	int j = 0;
+	for (int i = 0; i < projects.size(); i++) {
+		PROJECT* p = projects[i];
+#ifdef WIN32
+		j = _stricmp(p->project_name, sname);
+#else
+		j = strcasecmp(p->project_name, sname);
+#endif
+#if 0
+		msg_printf(0, MSG_INFO, "Project Name:%s  incoming:%s  truth:%d",
+			p->project_name, sname, j);
+#endif
+		if (j == 0)return p;
+	}
+	return NULL;
+}

@@ -92,7 +92,11 @@ void RSC_PROJECT_WORK_FETCH::resource_backoff(PROJECT* p, const char* name) {
         backoff_interval = WF_MIN_BACKOFF_INTERVAL;
     }
     double x = (.5 + drand())*backoff_interval;
-    backoff_time = gstate.now + x;
+	if (gstate.SetBackoff != -1)
+	{
+		x = gstate.SetBackoff; // jys
+	}
+	backoff_time = gstate.now + x;
     if (log_flags.work_fetch_debug) {
         msg_printf(p, MSG_INFO,
             "[work_fetch] backing off %s %.0f sec", name, x
@@ -631,7 +635,7 @@ void WORK_FETCH::setup() {
 
     // don't request work from projects w/ > 1000 runnable jobs
     //
-    int job_limit = 1000;
+    int job_limit = jys_MAX_JOBS;
     for (unsigned int i=0; i<gstate.projects.size(); i++) {
         PROJECT* p = gstate.projects[i];
         if (p->pwf.n_runnable_jobs > job_limit && !p->pwf.project_reason) {

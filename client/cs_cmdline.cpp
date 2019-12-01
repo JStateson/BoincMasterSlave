@@ -53,6 +53,12 @@ static void print_options(char* prog) {
         "    --allow_remote_gui_rpc         allow remote GUI RPC connections\n"
         "    --allow_multiple_clients       allow >1 instances per host\n"
         "    --attach_project <URL> <key>   attach to a project\n"
+		"    --set_hostname <name>          use this as hostname\n"
+		"    --set_password <password>      rpc gui password\n"
+		"    --set_backoff N                set back to this value\n"
+		"    --spoof_gpus N                 fake number of gpus\n"
+		"    --set_bunker_cnt <project> N   bunker this many workunits for given project then quit\n"
+		"    --mw_bug_fix                   delay attaching output to allow new work to download\n"
         "    --check_all_logins             for idle detection, check remote logins too\n"
         "    --daemon                       run as daemon (Unix)\n"
         "    --detach_console               detach from console (Windows)\n"
@@ -130,7 +136,50 @@ void CLIENT_STATE::parse_cmdline(int argc, char** argv) {
             cc_config.allow_multiple_clients = true;
         } else if (ARG(allow_remote_gui_rpc)) {
             cc_config.allow_remote_gui_rpc = true;
-        } else if (ARG(attach_project)) {
+		}
+		else if (ARG(set_bunker_cnt)) { //jys
+			if (i == argc - 2) show_options = true;
+			else {
+				strcpy(ProjectStarted, argv[++i]);
+				BunkerThreshold = atoi(argv[++i]);
+			}
+		}
+		else if (ARG(set_backoff)) { //jys
+			if (i == argc - 1) show_options = true;
+			else {
+				SetBackoff = atoi(argv[++i]);
+				if (SetBackoff < 10)
+				{
+					BackoffCode = SetBackoff;
+					SetBackoff = -1; // this is default
+				}
+			}
+		}
+		else if (ARG(set_hostname)) { // jys
+			if (i == argc - 1) {
+				show_options = true;
+			}
+			else {
+				safe_strcpy(set_hostname, argv[++i]);
+			}
+		}
+		else if (ARG(spoof_gpus)) { //jys
+			if (i == argc - 1) show_options = true;
+			else spoof_gpus = atoi(argv[++i]);
+		}
+		else if (ARG(set_password)) { // jys
+			if (i == argc - 1) {
+				show_options = true;
+			}
+			else {
+				safe_strcpy(set_password, argv[++i]);
+				bSetPassword = true;
+			}
+		}
+		else if (ARG(mw_bug_fix)) {
+			enable_mw_delay = true;
+		}
+		else if (ARG(attach_project)) {
             if (i >= argc-2) {
                 show_options = true;
             } else {
