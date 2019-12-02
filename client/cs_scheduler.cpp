@@ -284,8 +284,8 @@ int CLIENT_STATE::make_scheduler_request(PROJECT* p) {
 		work_fetch.copy_requests();
 		if (gstate.spoof_gpus != -1) // jys
 		{
-			coprocs.ati.req_instances = iGPU * GPU_PERFORMANCE;
-			coprocs.nvidia.req_instances = iGPU * GPU_PERFORMANCE;
+			//coprocs.ati.req_instances = iGPU * GPU_PERFORMANCE;
+			//coprocs.nvidia.req_instances = iGPU * GPU_PERFORMANCE;
 		}
 		coprocs.write_xml(mf, true,iGPU); // jys may not want to spoof this???
 	}
