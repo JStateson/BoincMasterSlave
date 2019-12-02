@@ -233,7 +233,7 @@ int write_init_data_file(FILE* f, APP_INIT_DATA& ai) {
     );
     MIOFILE mf;
     mf.init_file(f);
-    ai.host_info.write(mf, true, true);
+    ai.host_info.write(mf, true, true,0);
     ai.proxy_info.write(mf);
     ai.global_prefs.write(mf);
     for (unsigned int i=0; i<ai.app_files.size(); i++) {

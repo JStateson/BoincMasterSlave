@@ -606,7 +606,7 @@ static void handle_abort_result(GUI_RPC_CONN& grc) {
 }
 
 static void handle_get_host_info(GUI_RPC_CONN& grc) {
-    gstate.host_info.write(grc.mfout, true, true);
+    gstate.host_info.write(grc.mfout, true, true,0);
 }
 
 static void handle_get_screensaver_tasks(GUI_RPC_CONN& grc) {

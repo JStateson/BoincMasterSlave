@@ -241,7 +241,7 @@ int ACCT_MGR_OP::do_rpc(ACCT_MGR_INFO& _ami, bool _via_gui) {
             fclose(fprefs);
         }
     }
-    gstate.host_info.write(mf, !cc_config.suppress_net_info, true);
+    gstate.host_info.write(mf, !cc_config.suppress_net_info, true,0);
     if (strlen(gstate.acct_mgr_info.opaque)) {
         fprintf(f,
             "   <opaque>\n%s\n"

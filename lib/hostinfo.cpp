@@ -49,7 +49,7 @@ void HOST_INFO::clear_host_info() {
     safe_strcpy(serialnum, "");
     safe_strcpy(ip_addr, "");
     safe_strcpy(host_cpid, "");
-    safe_strcpy(set_hostname, "");   //jys
+    safe_strcpy(new_hostname, "");   //jys
     p_ncpus = 0;
     safe_strcpy(p_vendor, "");
     safe_strcpy(p_model, "");
@@ -165,7 +165,7 @@ int HOST_INFO::parse(XML_PARSER& xp, bool static_items_only) {
 // - app init file (net info, coprocs)
 //
 int HOST_INFO::write(
-    MIOFILE& out, bool include_net_info, bool include_coprocs
+    MIOFILE& out, bool include_net_info, bool include_coprocs, int iGPU // jys if > 0 then spoof count of gpu
 ) {
     char pv[265], pm[256], pf[1024], osn[256], osv[256], pn[256];
     out.printf(
@@ -223,7 +223,7 @@ int HOST_INFO::write(
         d_free,
         osn,
         osv,
-        coprocs.ndevs(),
+        (iGPU == 0) ? coprocs.ndevs() : iGPU,
 #ifdef _WIN64
         wsl_available ? 1 : 0
 #else
@@ -257,7 +257,7 @@ int HOST_INFO::write(
         );
     }
     if (include_coprocs) {
-        this->coprocs.write_xml(out, false);
+        this->coprocs.write_xml(out, false, iGPU);
     }
     
     // The same CPU can have a different opencl_cpu_prop 

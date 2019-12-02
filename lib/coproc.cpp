@@ -102,13 +102,13 @@ void PCI_INFO::write(MIOFILE& f) {
     );
 }
 
-void COPROC::write_xml(MIOFILE& f, bool scheduler_rpc) {
+void COPROC::write_xml(MIOFILE& f, bool scheduler_rpc, int iGPU) {
     f.printf(
         "<coproc>\n"
         "   <type>%s</type>\n"
         "   <count>%d</count>\n"
         "   <peak_flops>%f</peak_flops>\n",
-        type, count, peak_flops
+		type, (iGPU == 0) ? count : iGPU, peak_flops
     );
     
     if (scheduler_rpc) {
@@ -280,25 +280,25 @@ int COPROCS::parse(XML_PARSER& xp) {
 }
 
 #ifdef _USING_FCGI_
-void COPROCS::write_xml(MIOFILE&, bool) {
+void COPROCS::write_xml(MIOFILE&, bool, int) {
 }
 #else
-void COPROCS::write_xml(MIOFILE& mf, bool scheduler_rpc) {
+void COPROCS::write_xml(MIOFILE& mf, bool scheduler_rpc,int iGPU) { //jys spoof count
     mf.printf("    <coprocs>\n");
     
     for (int i=1; i<n_rsc; i++) {
         switch (coproc_type_name_to_num(coprocs[i].type)) {
         case PROC_TYPE_NVIDIA_GPU:
-            nvidia.write_xml(mf, scheduler_rpc);
+            nvidia.write_xml(mf, scheduler_rpc,iGPU);
             break;
         case PROC_TYPE_AMD_GPU:
-            ati.write_xml(mf, scheduler_rpc);
+            ati.write_xml(mf, scheduler_rpc,iGPU);
             break;
         case PROC_TYPE_INTEL_GPU:
-            intel_gpu.write_xml(mf, scheduler_rpc);
+            intel_gpu.write_xml(mf, scheduler_rpc,iGPU);
             break;
         default:
-            coprocs[i].write_xml(mf, scheduler_rpc);
+            coprocs[i].write_xml(mf, scheduler_rpc,iGPU);
         }
     }
     
@@ -337,7 +337,7 @@ void COPROC_NVIDIA::description(char* buf, int buflen) {
 }
 
 #ifndef _USING_FCGI_
-void COPROC_NVIDIA::write_xml(MIOFILE& f, bool scheduler_rpc) {
+void COPROC_NVIDIA::write_xml(MIOFILE& f, bool scheduler_rpc, int iGPU) {
     f.printf(
         "<coproc_cuda>\n"
         "   <count>%d</count>\n"
@@ -345,7 +345,7 @@ void COPROC_NVIDIA::write_xml(MIOFILE& f, bool scheduler_rpc) {
         "   <available_ram>%f</available_ram>\n"
         "   <have_cuda>%d</have_cuda>\n"
         "   <have_opencl>%d</have_opencl>\n",
-        count,
+        (iGPU==0) ?count : iGPU,
         prop.name,
         available_ram,
         have_cuda ? 1 : 0,
@@ -646,7 +646,7 @@ void COPROC_NVIDIA::fake(
 ////////////////// ATI STARTS HERE /////////////////
 
 #ifndef _USING_FCGI_
-void COPROC_ATI::write_xml(MIOFILE& f, bool scheduler_rpc) {
+void COPROC_ATI::write_xml(MIOFILE& f, bool scheduler_rpc, int iGPU) {
     f.printf(
         "<coproc_ati>\n"
         "   <count>%d</count>\n"
@@ -654,7 +654,7 @@ void COPROC_ATI::write_xml(MIOFILE& f, bool scheduler_rpc) {
         "   <available_ram>%f</available_ram>\n"
         "   <have_cal>%d</have_cal>\n"
         "   <have_opencl>%d</have_opencl>\n",
-        count,
+		(iGPU == 0) ? count : iGPU,
         name,
         available_ram,
         have_cal ? 1 : 0,
@@ -893,14 +893,14 @@ void COPROC_ATI::fake(double ram, double avail_ram, int n) {
 ////////////////// INTEL GPU STARTS HERE /////////////////
 
 #ifndef _USING_FCGI_
-void COPROC_INTEL::write_xml(MIOFILE& f, bool scheduler_rpc) {
+void COPROC_INTEL::write_xml(MIOFILE& f, bool scheduler_rpc, int iGPU) {
     f.printf(
         "<coproc_intel_gpu>\n"
         "   <count>%d</count>\n"
         "   <name>%s</name>\n"
         "   <available_ram>%f</available_ram>\n"
         "   <have_opencl>%d</have_opencl>\n",
-        count,
+		(iGPU == 0) ? count : iGPU,
         name,
         available_ram,
         have_opencl ? 1 : 0

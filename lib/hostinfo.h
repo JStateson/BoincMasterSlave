@@ -55,7 +55,7 @@ public:
     char serialnum[256];
     char ip_addr[256];
     char host_cpid[64];
-	char set_hostname[256];        //jys
+	char new_hostname[256];        //jys
 
     int p_ncpus;
     char p_vendor[256];
@@ -98,7 +98,7 @@ public:
 
     HOST_INFO();
     int parse(XML_PARSER&, bool static_items_only = false);
-    int write(MIOFILE&, bool include_net_info, bool include_coprocs);
+    int write(MIOFILE&, bool include_net_info, bool include_coprocs, int iGPU); // jys spoof gpu count
     int parse_cpu_benchmarks(FILE*);
     int write_cpu_benchmarks(FILE*);
     void print();

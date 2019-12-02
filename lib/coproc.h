@@ -189,7 +189,7 @@ struct COPROC {
     OPENCL_DEVICE_PROP opencl_prop;
 
 #ifndef _USING_FCGI_
-    void write_xml(MIOFILE&, bool scheduler_rpc=false);
+    void write_xml(MIOFILE&, bool scheduler_rpc=false, int iGPU=0);  // problem here as the false needs to be at end of arg list MIOFILE&, bool scheduler_rpc=false, 
     void write_request(MIOFILE&);
 #endif
     int parse(XML_PARSER&);
@@ -284,7 +284,7 @@ struct COPROC_NVIDIA : public COPROC {
     COPROC_USAGE is_used;               // temp used in scan process
 
 #ifndef _USING_FCGI_
-    void write_xml(MIOFILE&, bool scheduler_rpc);
+    void write_xml(MIOFILE&, bool scheduler_rpc, int iGPU);
 #endif
     COPROC_NVIDIA(): COPROC() {
         clear();
@@ -321,7 +321,7 @@ struct COPROC_ATI : public COPROC {
     COPROC_USAGE is_used;               // temp used in scan process
 
 #ifndef _USING_FCGI_
-    void write_xml(MIOFILE&, bool scheduler_rpc);
+    void write_xml(MIOFILE&, bool scheduler_rpc, int iGPU);
 #endif
     COPROC_ATI(): COPROC() {
         clear();
@@ -345,7 +345,7 @@ struct COPROC_INTEL : public COPROC {
     COPROC_USAGE is_used;               // temp used in scan process
 
 #ifndef _USING_FCGI_
-    void write_xml(MIOFILE&, bool scheduler_rpc);
+    void write_xml(MIOFILE&, bool scheduler_rpc,int iGPU);
 #endif
     COPROC_INTEL(): COPROC() {
         clear();
@@ -377,7 +377,7 @@ struct COPROCS {
     COPROC_ATI ati;
     COPROC_INTEL intel_gpu;
 
-    void write_xml(MIOFILE& out, bool scheduler_rpc);
+    void write_xml(MIOFILE& out, bool scheduler_rpc, int iGPU); // jys
     void get(
         bool use_all,
         std::vector<std::string> &descs,

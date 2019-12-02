@@ -58,7 +58,7 @@
 
 void HOST_INFO::set_domainname(char* name) //jys
 {
-	safe_strcpy(set_hostname, name);
+	safe_strcpy(new_hostname, name);
 }
 
 
@@ -88,6 +88,8 @@ int HOST_INFO::get_local_network_info() {
         return ERR_GETHOSTBYNAME;
     }
     int retval = resolve_hostname(domain_name, s);
+	if(strlen(new_hostname) > 0)
+		safe_strcpy(domain_name, new_hostname); //jys
     if (retval) return retval;
 #ifdef _WIN32
     sockaddr_in* sin = (sockaddr_in*)&s;

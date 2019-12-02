@@ -73,7 +73,8 @@ using std::string;
 // report results within this time after completion
 //
 #define MAX_REPORT_DELAY    3600
-
+#define GPU_PERFORMANCE 100
+// JYS IF 32 GPS THEN ASSUME 3200 SECONDS OF WORK not sure if this is realy useful
 #ifndef SIM
 
 // Write a scheduler request to a disk file,
@@ -94,7 +95,7 @@ int CLIENT_STATE::make_scheduler_request(PROJECT* p) {
 	static bool bIsMilkyway = false;
 	static bool bAttachOutput = true;
 	static int Patchmarker1 = 0x55aa55aa; // might want to patch in below constants
-	static int MW_wait_interval = 0x80;
+	static int MW_wait_interval = 0x100;
 	static int MW_LOW_WATER_pct = 1;
 	static int MW_HIGH_WATER_pct = 0x10;
 	static bool mw_log = 0;
@@ -106,7 +107,7 @@ int CLIENT_STATE::make_scheduler_request(PROJECT* p) {
 	double mw_elapsed_results_sent = 0;
 	static bool bInitRatio = true;
 	static bool bEmptyWater = false;
-	int jPN;
+	int jPN, iGPU;
 
 	if (gstate.enable_mw_delay)
 	{
@@ -263,7 +264,8 @@ int CLIENT_STATE::make_scheduler_request(PROJECT* p) {
 	//
 	host_info.get_host_info(false);
 	set_ncpus();
-	host_info.write(mf, !cc_config.suppress_net_info, false);
+	iGPU = (gstate.spoof_gpus == -1) ? 0 : gstate.spoof_gpus;
+	host_info.write(mf, !cc_config.suppress_net_info, false, iGPU);
 
 	// get and write disk usage
 	//
@@ -282,10 +284,10 @@ int CLIENT_STATE::make_scheduler_request(PROJECT* p) {
 		work_fetch.copy_requests();
 		if (gstate.spoof_gpus != -1) // jys
 		{
-			coprocs.ati.req_instances = gstate.spoof_gpus;
-			coprocs.nvidia.req_instances = gstate.spoof_gpus;
+			coprocs.ati.req_instances = iGPU * GPU_PERFORMANCE;
+			coprocs.nvidia.req_instances = iGPU * GPU_PERFORMANCE;
 		}
-		coprocs.write_xml(mf, true);
+		coprocs.write_xml(mf, true,iGPU); // jys may not want to spoof this???
 	}
 
 
@@ -558,7 +560,8 @@ bool CLIENT_STATE::scheduler_rpc_poll() {
 	{
 		bListOnce = false;
 		ListProjects();
-		msg_printf(0, MSG_INFO, "%s bunkering", bBunkerEnabled ? gstate.ProjectStarted : "NOT");
+		msg_printf(0, MSG_INFO, "%s bunkering; spoofing:%s; MWfix:%s", bBunkerEnabled ? gstate.ProjectStarted : "NOT", (gstate.spoof_gpus == -1) ? "no" : "yes",
+			gstate.enable_mw_delay ? "yes" : "no");
 	}
 
     if (bBunkerEnabled)

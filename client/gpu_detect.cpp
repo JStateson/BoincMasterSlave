@@ -405,17 +405,17 @@ int COPROCS::write_coproc_info_file(vector<string> &warnings) {
     }
     
     for (i=0; i<ati_gpus.size(); ++i) {
-       ati_gpus[i].write_xml(mf, false);
+       ati_gpus[i].write_xml(mf, false, 0); //jys
     }
     for (i=0; i<nvidia_gpus.size(); ++i) {
         temp = nvidia_gpus[i].count;
         nvidia_gpus[i].count = 1;
         nvidia_gpus[i].pci_infos[0] = nvidia_gpus[i].pci_info;
-        nvidia_gpus[i].write_xml(mf, false);
+        nvidia_gpus[i].write_xml(mf, false, 0 );
         nvidia_gpus[i].count = temp;
     }
     for (i=0; i<intel_gpus.size(); ++i) {
-        intel_gpus[i].write_xml(mf, false);
+        intel_gpus[i].write_xml(mf, false, 0);
     }
     for (i=0; i<ati_opencls.size(); ++i) {
         ati_opencls[i].write_xml(mf, "ati_opencl", true);
