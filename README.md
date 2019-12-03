@@ -3,11 +3,17 @@ WARNING - USE THIS PROGRAM AT YOUR OWN RISK.  If you use the bunkering feature b
 The sources here are based on 7.14.2 with changes to implement the following features
 
 Usage: boinc [options]
+
     --set_hostname <name>          use this as hostname
+    
     --set_password <password>      rpc gui password
+    
     --set_backoff N                set backoff to this value
+    
     --spoof_gpus N                 fake number of gpus
+    
     --set_bunker_cnt <project> N   bunker this many workunits for given project then quit
+    
     --mw_bug_fix                   delay attaching output to allow new work to download (Milkyway only)
 
 This project is named master - slave as the intent is to use the project information at \ProjectData\Boinc (or /var/lib/boinc) as
