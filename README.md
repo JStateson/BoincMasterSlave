@@ -1,4 +1,5 @@
 # Status
+WARNING - USE THIS PROGRAM AT YOUR OWN RISK.  If you use the bunkering feature be aware that you must only crunch the project you want to bunker and no others.  questons to josephy@stateson.net
 
 [![Build Status](https://travis-ci.org/BOINC/boinc.svg?branch=master)](https://travis-ci.org/BOINC/boinc) [![Build status](https://ci.appveyor.com/api/projects/status/9dgoc9h5ppos8vcy/branch/master?svg=true)](https://ci.appveyor.com/project/BOINC/boinc/branch/master) [![Coverity Scan Build Status](https://scan.coverity.com/projects/4226/badge.svg)](https://scan.coverity.com/projects/boinc-boinc) [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/BOINC/boinc/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/BOINC/boinc/?branch=master)
 
