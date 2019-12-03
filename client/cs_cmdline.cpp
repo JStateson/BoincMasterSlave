@@ -55,7 +55,7 @@ static void print_options(char* prog) {
         "    --attach_project <URL> <key>   attach to a project\n"
 		"    --set_hostname <name>          use this as hostname\n"
 		"    --set_password <password>      rpc gui password\n"
-		"    --set_backoff N                set back to this value\n"
+		"    --set_backoff N                set backoff to this value\n"
 		"    --spoof_gpus N                 fake number of gpus\n"
 		"    --set_bunker_cnt <project> N   bunker this many workunits for given project then quit\n"
 		"    --mw_bug_fix                   delay attaching output to allow new work to download\n"

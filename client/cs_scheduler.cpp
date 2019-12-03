@@ -284,10 +284,12 @@ int CLIENT_STATE::make_scheduler_request(PROJECT* p) {
 		work_fetch.copy_requests();
 		if (gstate.spoof_gpus != -1) // jys
 		{
+			//the folloiwng need to be investigated.  possibly a larger first batch of work units can be obtained
+			//but dont know exactly what these "instances" do
 			//coprocs.ati.req_instances = iGPU * GPU_PERFORMANCE;
 			//coprocs.nvidia.req_instances = iGPU * GPU_PERFORMANCE;
 		}
-		coprocs.write_xml(mf, true,iGPU); // jys may not want to spoof this???
+		coprocs.write_xml(mf, true, iGPU); // jys this was critical for spoofing
 	}
 
 
@@ -312,7 +314,7 @@ int CLIENT_STATE::make_scheduler_request(PROJECT* p) {
 				msg_printf(0, MSG_INFO, "[MILKYWAY] InProgress:%8.2f  NotStarted: %8.2f high:%6.1f  low:%6.1f",
 				InProgress, NotStarted, NotStarted*mw_high, NotStarted*mw_low);
 		}
-		// always attach on an update so as to upload results
+		// always attach on a user reqwuested update so as to upload results
 		if (p->sched_rpc_pending == RPC_REASON_USER_REQ)
 			bAttachOutput = true;
 	}
@@ -546,7 +548,8 @@ bool CLIENT_STATE::scheduler_rpc_poll() {
 	double InProgress = 0.0; // when this  goes to 0.0 we are done with all units [used only in bunkering]
 	static int iMpy = 5;
 	static PROJECT *BunkeredProject;
-	static bool bListOnce = true; // want to get exact spelling of project name for lookup purpose
+	static bool bListOnce = true; // want to get exact spelling of project name for lookup purpose even though all projects bunkered
+
     // are we currently doing a scheduler RPC?
     // If so, see if it's finished
     //
@@ -556,7 +559,7 @@ bool CLIENT_STATE::scheduler_rpc_poll() {
         return (scheduler_op->state == SCHEDULER_OP_STATE_IDLE);
     }
 
-	if (bListOnce)
+	if (bListOnce) // jys show what we are doing at startup
 	{
 		bListOnce = false;
 		ListProjects();
@@ -567,7 +570,7 @@ bool CLIENT_STATE::scheduler_rpc_poll() {
     if (bBunkerEnabled)
     {
         if (bWaitForEmpty)
-        {  // every 5 minutes show status
+        {  // every 5 minutes show status then ever 1 minute near end of bunkering
             cc_config.exit_when_idle = true;
             had_or_requested_work = true;
             elapsed_time = now - last_show_status;
@@ -575,11 +578,14 @@ bool CLIENT_STATE::scheduler_rpc_poll() {
 			BunkeredProject->get_task_durs(NotStarted, InProgress);
             msg_printf(0, MSG_INFO, " set cc_config for empty results:%d  WUs:%d  IP:%8.2f NS:%8.2f", 
 				gstate.results.size(), gstate.workunits.size(),NotStarted, InProgress);
+			//jys unaccountably results and workunits are identical so cannot be used to see when all workunits are completed
+			// must test IP and NS 
 			InProgress += NotStarted;
-			if (InProgress < 4000) iMpy = 1;  //jys these are allways 0 as never calculated it seems
+			if (InProgress < 4000) iMpy = 1; 
 			if (InProgress == 0.0)
 			{
 				// signal exit timer thread
+				// after exiting no-new-work is enabled but the network is NOT suspended
 				exit_after_app_start_secs = 1;
 			}
             last_show_status = now;
@@ -605,7 +611,7 @@ bool CLIENT_STATE::scheduler_rpc_poll() {
             return false;
         }
     }
-
+	// this code will never be reached when bunkering so effectively "networking" is suspended
     if (network_suspended) return false;
 
     // check only every 5 sec
