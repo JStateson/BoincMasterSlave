@@ -1020,6 +1020,9 @@ static void promote_multi_thread_jobs(vector<RESULT*>& runnable_jobs) {
 static inline bool more_important(RESULT* r0, RESULT* r1) {
     // favor jobs in danger of deadline miss
     //
+	// jys set priority to do under cutoff first - this needs to be verified as working TODO
+	if (r0->bUnderCutoff)return true;  //jys
+	if (r1->bUnderCutoff)return false; // jys
     bool miss0 = r0->edf_scheduled;
     bool miss1 = r1->edf_scheduled;
     if (miss0 && !miss1) return true;

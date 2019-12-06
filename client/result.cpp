@@ -71,6 +71,7 @@ void RESULT::clear() {
     final_peak_disk_usage = 0;
     final_bytes_sent = 0;
     final_bytes_received = 0;
+	bUnderCutoff = false; // jys
 #ifdef SIM
     peak_flop_count = 0;
 #endif

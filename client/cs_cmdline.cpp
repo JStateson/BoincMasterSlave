@@ -58,6 +58,8 @@ static void print_options(char* prog) {
 		"    --set_backoff N                set backoff to this value\n"
 		"    --spoof_gpus N                 fake number of gpus\n"
 		"    --set_bunker_cnt <project> N   bunker this many workunits for given project then quit\n"
+		"    --bunker_time_string <text>    unix time cutoff for reporting - used with bunker\n"
+		"                                   in this format exactly:  \"11/24/2019T10:41:29\"\n"
 		"    --mw_bug_fix                   delay attaching output to allow new work to download\n"
         "    --check_all_logins             for idle detection, check remote logins too\n"
         "    --daemon                       run as daemon (Unix)\n"
@@ -121,6 +123,26 @@ static void print_options(char* prog) {
 #define ARGX2(s1,s2) (!strcmp(argv[i], s1)||!strcmp(argv[i], s2))
 #define ARG(S) ARGX2("-"#S, "--"#S)
 
+//2013/05/17T05:01:00
+//11/24/2019T10:41:29 as shown in BoincTasks
+double jysdate(char *in)
+{
+	struct tm tm;
+	time_t seconds;
+	int r;
+	char BigT;
+	memset(&tm, 0, sizeof(tm));
+	r = sscanf(in, "%2d/%2d/%4d%1c%2d:%2d:%2d", &tm.tm_mon, &tm.tm_mday, &tm.tm_year, &BigT, &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
+	if (r != 7) return 0.0;
+	tm.tm_year -= 1900;
+	tm.tm_mon -= 1;
+	tm.tm_isdst = -1;
+	seconds = mktime(&tm);
+	if (BigT != 'T')return 0.0;
+	if (seconds == (time_t)-1) return 0.0;
+	return seconds;
+}
+
 void CLIENT_STATE::parse_cmdline(int argc, char** argv) {
     int i;
     bool show_options = false;
@@ -178,6 +200,15 @@ void CLIENT_STATE::parse_cmdline(int argc, char** argv) {
 		}
 		else if (ARG(mw_bug_fix)) {
 			enable_mw_delay = true;
+		}
+		else if (ARG(bunker_time_string)) {
+			if (i == argc - 1) show_options = true;
+			else {
+				strcpy(bunker_time_string, argv[++i]);
+				BunkerTime = jysdate(bunker_time_string);
+				time_t lt = BunkerTime;
+				strcpy(bunker_time_string, asctime(localtime(&lt)));
+			}
 		}
 		else if (ARG(attach_project)) {
             if (i >= argc-2) {
@@ -314,6 +345,7 @@ void CLIENT_STATE::parse_cmdline(int argc, char** argv) {
             show_options = true;
         }
     }
+	if (BunkerTime == 0.0 && BunkerThreshold > 0) show_options = true;
     if (show_options) {
         print_options(argv[0]);
         exit(1);

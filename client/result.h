@@ -34,6 +34,7 @@ struct RESULT {
         // we're ready to report this result to the server;
         // either computation is done and all the files have been uploaded
         // or there was an error
+	bool bUnderCutoff; //when bunkering be sure to process and report these first jys
     double completed_time;
         // time when ready_to_report was set
     bool got_server_ack;

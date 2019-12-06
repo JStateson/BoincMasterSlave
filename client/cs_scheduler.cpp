@@ -549,6 +549,7 @@ bool CLIENT_STATE::scheduler_rpc_poll() {
 	static int iMpy = 5;
 	static PROJECT *BunkeredProject;
 	static bool bListOnce = true; // want to get exact spelling of project name for lookup purpose even though all projects bunkered
+	
 
     // are we currently doing a scheduler RPC?
     // If so, see if it's finished
@@ -565,6 +566,15 @@ bool CLIENT_STATE::scheduler_rpc_poll() {
 		ListProjects();
 		msg_printf(0, MSG_INFO, "%s bunkering; spoofing:%s; MWfix:%s", bBunkerEnabled ? gstate.ProjectStarted : "NOT", (gstate.spoof_gpus == -1) ? "no" : "yes",
 			gstate.enable_mw_delay ? "yes" : "no");
+		if (BunkerTime >= 0)
+		{
+			time_t t = BunkerTime;
+			msg_printf(0, MSG_INFO, " Enableing cutoff:%s;  You specified a cutoff time of:%s and actual cutoff is:%s please verify.", //jys
+				bUseCutoff ? "TRUE" : "FALSE", bunker_time_string, asctime(localtime(&t)));
+			// jys - try to set priority of items below cutoff so they execute first and avoid deleting or marking cooproc as not available.
+			// however, once the bunker count has been reached either delete those items or make sure they all execute first, report and then exit
+			// TODO:  right now the program exits and those work units will be reported as missing. maybe use "report immediately" for all below cutoff might help
+		}
 	}
 
     if (bBunkerEnabled)
@@ -576,10 +586,10 @@ bool CLIENT_STATE::scheduler_rpc_poll() {
             elapsed_time = now - last_show_status;
             if (!clock_change && elapsed_time < iMpy * WORK_FETCH_PERIOD) return false;
 			BunkeredProject->get_task_durs(NotStarted, InProgress);
-            msg_printf(0, MSG_INFO, " set cc_config for empty results:%d  WUs:%d  IP:%8.2f NS:%8.2f", 
-				gstate.results.size(), gstate.workunits.size(),NotStarted, InProgress);
+            msg_printf(0, MSG_INFO, "Signaled we want to exit:%d  WUs:%d  IP:%8.2f NS:%8.2f BelowCutoff:%d", 
+				gstate.results.size(), gstate.workunits.size(),NotStarted, InProgress, NumUnderCutoff);
 			//jys unaccountably results and workunits are identical so cannot be used to see when all workunits are completed
-			// must test IP and NS 
+			// must test IP and NS TODO:  test under cutoff and allow them to report
 			InProgress += NotStarted;
 			if (InProgress < 4000) iMpy = 1; 
 			if (InProgress == 0.0)
@@ -751,7 +761,21 @@ int CLIENT_STATE::handle_scheduler_reply(
 
     if (log_flags.sched_ops) {
         if (work_fetch.requested_work()) {
+			int j = 0;
             snprintf(buf, sizeof(buf), ": got %d new tasks", (int)sr.results.size());
+			for (i = 0; i < sr.results.size() && bUseCutoff; i++)
+			{
+				if (sr.results[i].report_deadline < BunkerTime)
+				{
+					sr.results[i].bUnderCutoff = true; // arrange to sort this as a priority
+					j++;
+				}
+			}
+			NumUnderCutoff += j;
+			if (NumUnderCutoff > 0)
+			{
+				msg_printf(0, MSG_INFO, "Below Cutoff:%d total below:%d", j, NumUnderCutoff);
+			}
         } else {
             safe_strcpy(buf, "");
         }

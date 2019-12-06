@@ -162,6 +162,10 @@ struct CLIENT_STATE {
 	int BunkerThreshold = -1; // jys
 	int spoof_gpus = -1; //jys
 	bool enable_mw_delay = false; //jys
+	double BunkerTime = -1.0; //jys
+	int NumUnderCutoff = 0; //jys need to handle these properly and not just delete them
+	char bunker_time_string[256]; //jys
+	bool bUseCutoff = false; //jys  true if time is set and count is set
     bool exit_before_upload;
         // exit when about to upload a file
     bool run_test_app;

@@ -443,6 +443,7 @@ int CLIENT_STATE::init() {
     char buf[256];
     PROJECT* p;
 
+	bUseCutoff = BunkerTime > 0.0 && BunkerThreshold > 0;
     srand((unsigned int)time(0));
     now = dtime();
 #ifdef ANDROID
