@@ -581,11 +581,11 @@ static void handle_result_op(GUI_RPC_CONN& grc, const char* op) {
         }
         gstate.request_work_fetch("result aborted by user");
     } else if (!strcmp(op, "suspend")) {
-        msg_printf(p, MSG_INFO, "task %s suspended by user", result_name);
+       // msg_printf(p, MSG_INFO, "task %s suspended by user", result_name); // jys dont bother as
         rp->suspended_via_gui = true;
         gstate.request_work_fetch("task suspended by user");
     } else if (!strcmp(op, "resume")) {
-        msg_printf(p, MSG_INFO, "task %s resumed by user", result_name);
+       // msg_printf(p, MSG_INFO, "task %s resumed by user", result_name); // jys there might be a lot of them
         rp->suspended_via_gui = false;
     }
     gstate.request_schedule_cpus("task suspended, resumed or aborted by user");
