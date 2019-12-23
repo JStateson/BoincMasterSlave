@@ -158,7 +158,6 @@ struct CLIENT_STATE {
 	char ProjectStarted[256];  // jys name of the project that requires special handleing
 	bool bSetPassword = false; // set to true if user did a --set_password "" so as to make it null
 	int SetBackoff = -1;       // jys set backoff to a value else use default
-	int BackoffCode = 0;		// 0: do not test for out of work, 1: test for out of work only after getting some
 	int BunkerThreshold = -1; // jys
 	int spoof_gpus = -1; //jys
 	bool enable_mw_delay = false; //jys

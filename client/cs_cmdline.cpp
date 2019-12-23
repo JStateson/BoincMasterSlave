@@ -170,11 +170,6 @@ void CLIENT_STATE::parse_cmdline(int argc, char** argv) {
 			if (i == argc - 1) show_options = true;
 			else {
 				SetBackoff = atoi(argv[++i]);
-				if (SetBackoff < 10)
-				{
-					BackoffCode = SetBackoff;
-					SetBackoff = -1; // this is default
-				}
 			}
 		}
 		else if (ARG(set_hostname)) { // jys
